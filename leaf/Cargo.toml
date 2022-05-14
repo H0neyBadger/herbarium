@@ -8,16 +8,30 @@ crate-type = ["cdylib"]
 
 [dependencies]
 wasm-bindgen = "0.2"
-console_error_panic_hook = "0.1.7"
-kamadak-exif = "0.5.4"
-qrcode-generator = "4.1.6"
+console_error_panic_hook = "0.1"
+kamadak-exif = "0.5"
+qrcode-generator = "4.1"
 # image = "0.24.2"
-imageproc = "0.23.0"
+imageproc = {version = "0.23", default-features = false}
 
 [dependencies.image]
-version = "0.24.2"
+version = "0.24"
 default-features = false
-features = ["gif", "jpeg", "ico", "png", "pnm", "tga", "tiff", "webp", "bmp", "hdr", "dxt", "dds", "farbfeld"]
+features = [
+    "gif",
+    "jpeg",
+    "ico",
+    "png",
+    "pnm",
+    "tga",
+    "tiff",
+    "webp",
+    "bmp",
+    "hdr",
+    "dxt",
+    "dds",
+    "farbfeld",
+]
 
 [package.metadata.wasm-pack.profile.release]
 wasm-opt = false

@@ -6,7 +6,7 @@ build: node_modules
 node_modules: leaf/pkg package.json
 	npm install
 
-leaf/pkg: leaf/src/*.rs
+leaf/pkg: leaf/src/*.rs leaf/Cargo.toml
 	cd leaf && wasm-pack build --target web
 
 clean:
