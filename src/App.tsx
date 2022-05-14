@@ -31,6 +31,28 @@ function App() {
     setImageData([...imageData])
   }
 
+  function setGpsData(idx: number, data: string) {
+    imageData[idx].gpsData = data
+    imageData[idx].gpsSrc = convertPngImage(Leaf.get_qr(data))
+    setImageData([...imageData])
+  }
+
+  function setEdgeData(
+    idx: number,
+    low_threshold: number,
+    high_threshold: number
+  ) {
+    let instance = imageData[idx].leaf
+    imageData[idx].edgeData = {
+      low_threshold: low_threshold,
+      high_threshold: high_threshold,
+    }
+    imageData[idx].edgeSrc = convertPngImage(
+      instance.get_edge(low_threshold, high_threshold)
+    )
+    setImageData([...imageData])
+  }
+
   async function readFile(event: any): Promise<void> {
     let files = Array.from(event.target.files).map((file: any) => {
       const fileReader = new FileReader()
@@ -61,7 +83,6 @@ function App() {
         file: e.file,
         name: e.file.name as string,
         leaf: instance,
-        edgeSrc: convertPngImage(instance.get_edge()),
       }
       ret.push(image)
     })
@@ -83,7 +104,9 @@ function App() {
       <StandardImageList
         data={imageData}
         show={tab}
+        handleGpsChange={setGpsData}
         handleQrChange={setQrData}
+        handleEdgeChange={setEdgeData}
       />
     </ThemeProvider>
   )

@@ -50,7 +50,7 @@ impl Leaf {
         qrcode_generator::to_png_to_vec(data, qrcode_generator::QrCodeEcc::Low, 1024).unwrap()
     }
 
-    pub fn get_edge(&self) -> Vec<u8> {
+    pub fn get_edge(&self, low_threshold: f32, high_threshold: f32) -> Vec<u8> {
         let img = image::io::Reader::new(std::io::Cursor::new(&self.raw))
             .with_guessed_format()
             .unwrap()
@@ -58,8 +58,9 @@ impl Leaf {
             .unwrap()
             .to_luma8();
         let ret = imageproc::edges::canny(
-            &img, 0.01, // low threshold
-            0.2,  // high threshold
+            &img,
+            low_threshold,  // low threshold
+            high_threshold, // high threshold
         );
         let mut bytes: Vec<u8> = Vec::new();
         ret.write_to(
