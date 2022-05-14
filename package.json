@@ -1,5 +1,6 @@
 {
-  "name": "leaf",
+  "name": "herbarium",
+  "homepage": "https://h0neybadger.github.io/herbarium/",
   "version": "0.1.0",
   "private": true,
   "dependencies": {
