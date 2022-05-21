@@ -31,7 +31,9 @@ export interface EdgeThresholds {
 
 export interface Image {
   name: string
-  src: string
+  file: Blob
+  src?: string
+  leaf?: Leaf // wasm instance
   gpsLink?: string
   gpsData?: string
   gpsSrc?: string
@@ -39,8 +41,6 @@ export interface Image {
   qrSrc?: string
   edgeData?: EdgeThresholds
   edgeSrc?: string
-  file: Blob
-  leaf: Leaf
 }
 
 export interface ImageData {

@@ -12,6 +12,7 @@ const Input = styled('input')({
 export interface HerbariumAppBarProps {
   // onExport: (event: any) => Promise<void>
   onImport: (event: any) => Promise<void>
+  isLoading: boolean
 }
 
 export default function HerbariumAppBar(props: HerbariumAppBarProps) {
@@ -22,7 +23,9 @@ export default function HerbariumAppBar(props: HerbariumAppBarProps) {
           <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
             Herbarium
           </Typography>
-          <Button color="inherit">Export</Button>
+          <Button color="inherit" disabled={props.isLoading}>
+            Export
+          </Button>
           <label htmlFor="contained-button-file">
             <Input
               accept="image/*"
@@ -31,8 +34,8 @@ export default function HerbariumAppBar(props: HerbariumAppBarProps) {
               type="file"
               onChange={props.onImport}
             />
-            <Button component="span" color="inherit">
-              Import
+            <Button component="span" color="inherit" disabled={props.isLoading}>
+              {props.isLoading ? '...Loading' : 'Import'}
             </Button>
           </label>
         </Toolbar>
