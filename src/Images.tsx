@@ -1,4 +1,4 @@
-import { useState, ChangeEvent } from 'react'
+import { useState, useEffect, useRef, ChangeEvent } from 'react'
 import {
   Box,
   Grid,
@@ -222,6 +222,7 @@ function EdgeDetail(props: EdgeModal) {
     </Box>
   )
 }
+
 export function StandardImageList(props: ImageData) {
   const [showDetail, setShowDetail] = useState<number | undefined>()
 
@@ -240,6 +241,7 @@ export function StandardImageList(props: ImageData) {
     }
   }
 
+  // <WasmImage {...item} />
   return (
     <Box sx={{ m: 1 }}>
       <ImageList cols={4} variant="standard">

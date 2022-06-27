@@ -12,6 +12,12 @@ enum CountActionKind {
   DECREASE = 'DECREASE',
 }
 
+enum WasmActionKind {
+  EDGE = 'EDGE',
+  GPS = 'GPS',
+  DATA = 'DATA',
+}
+
 interface CountAction {
   type: CountActionKind
   payload: number
@@ -40,12 +46,38 @@ function loaderReducer(state: CountState, action: CountAction) {
   }
 }
 
+const wasm_worker: Worker = new Worker(new URL('./worker.js', import.meta.url))
+
 function App() {
   // const classes = useStyles();
   const [state, dispatch] = useReducer(loaderReducer, { count: 0 })
   const [tab, setTab] = useState(0)
   const [isLoading, setIsLoading] = useState(false)
   const [imageData, setImageData] = useState<Image[]>([])
+
+  function wasmEvent(event: MessageEvent) {
+    const data = event.data
+    console.log(`recived worker data ${data}`)
+
+    const idx = data.idx
+    let image = imageData[idx]
+    switch (data.action) {
+      case WasmActionKind.EDGE:
+        image.edgeSrc = data.data
+        break
+      case WasmActionKind.GPS:
+        image.gpsSrc = data.data
+        break
+      case WasmActionKind.DATA:
+        image.qrSrc = data.data
+        break
+      default:
+        return
+    }
+    setImageData([...imageData])
+    dispatch({ type: CountActionKind.DECREASE, payload: 1 })
+  }
+  wasm_worker.onmessage = wasmEvent
 
   useEffect(() => {
     init() // FIXME handle wasm init
@@ -65,38 +97,22 @@ function App() {
     setTab(newValue)
   }
 
-  function convertPngImage(data: Uint8Array) {
-    let blob = new Blob([data.buffer], { type: 'image/png' })
-    return URL.createObjectURL(blob)
-  }
-
-  function setImage(image: Image, data: string, file: any) {
-    let b = data.split(',')[1]
-    let obj = atob(b) // read base64
-
-    var len = obj.length
-    var bytes = new Uint8Array(len)
-    for (var i = 0; i < len; i++) {
-      bytes[i] = obj.charCodeAt(i)
-    }
-
-    image.leaf = Leaf.new(bytes)
-    image.src = data
-    image.edgeSrc = convertPngImage(image.leaf.get_edge(0.2, 0.7))
-
-    dispatch({ type: CountActionKind.DECREASE, payload: 1 })
-  }
-
   function setQrData(idx: number, data: string) {
-    imageData[idx].qrData = data
-    imageData[idx].qrSrc = convertPngImage(Leaf.get_qr(data))
-    setImageData([...imageData])
+    dispatch({ type: CountActionKind.INCREASE, payload: 1 })
+    wasm_worker.postMessage({
+      data: data,
+      idx: idx,
+      action: WasmActionKind.DATA,
+    })
   }
 
   function setGpsData(idx: number, data: string) {
-    imageData[idx].gpsData = data
-    imageData[idx].gpsSrc = convertPngImage(Leaf.get_qr(data))
-    setImageData([...imageData])
+    dispatch({ type: CountActionKind.INCREASE, payload: 1 })
+    wasm_worker.postMessage({
+      data: data,
+      idx: idx,
+      action: WasmActionKind.GPS,
+    })
   }
 
   function setEdgeData(
@@ -104,22 +120,24 @@ function App() {
     low_threshold: number,
     high_threshold: number
   ) {
-    let instance = imageData[idx]?.leaf
-    if (instance !== undefined) {
-      imageData[idx].edgeData = {
+    const src = imageData[idx]?.src
+    if (src !== undefined) {
+      dispatch({ type: CountActionKind.INCREASE, payload: 1 })
+      wasm_worker.postMessage({
+        data: src,
+        idx: idx,
+        action: WasmActionKind.EDGE,
         low_threshold: low_threshold,
         high_threshold: high_threshold,
-      }
-      imageData[idx].edgeSrc = convertPngImage(
-        instance.get_edge(low_threshold, high_threshold)
-      )
-      setImageData([...imageData])
+      })
     }
   }
 
   async function readFile(event: any): Promise<void> {
     let files = Array.from(event.target.files)
-    // let offset = imageData.length
+    let offset = imageData.length
+    // *2 load image and edge
+    dispatch({ type: CountActionKind.INCREASE, payload: files.length * 2 })
     let images: Image[] = files.map((file: any, idx: number) => {
       let image = {
         name: file.name as string,
@@ -127,13 +145,20 @@ function App() {
       } as Image
 
       const fileReader = new FileReader()
-      fileReader.onload = (e: any) => {
-        setImage(image, e.target.result as string, file)
+      fileReader.onload = async (e: any) => {
+        image.src = e.target.result as string
+        wasm_worker.postMessage({
+          data: image.src,
+          idx: idx + offset,
+          action: WasmActionKind.EDGE,
+          low_threshold: 0.2,
+          high_threshold: 0.7,
+        })
+        dispatch({ type: CountActionKind.DECREASE, payload: 1 })
       }
       fileReader.readAsDataURL(file)
       return image
     })
-    dispatch({ type: CountActionKind.INCREASE, payload: images.length })
     setImageData([...imageData, ...images])
   }
 

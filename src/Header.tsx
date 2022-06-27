@@ -35,7 +35,7 @@ export default function HerbariumAppBar(props: HerbariumAppBarProps) {
               onChange={props.onImport}
             />
             <Button component="span" color="inherit" disabled={props.isLoading}>
-              {props.isLoading ? '...Loading' : 'Import'}
+              {props.isLoading ? '... Loading' : 'Import'}
             </Button>
           </label>
         </Toolbar>
