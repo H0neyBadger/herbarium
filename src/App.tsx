@@ -3,7 +3,6 @@ import { createTheme, ThemeProvider } from '@mui/material/styles'
 import CssBaseline from '@mui/material/CssBaseline'
 import { Tabs, Tab } from '@mui/material'
 
-import init, { Leaf } from 'leaf'
 import HerbariumAppBar from './Header'
 import { Image, StandardImageList, ImageTab } from './Images'
 
@@ -47,6 +46,7 @@ function loaderReducer(state: CountState, action: CountAction) {
 }
 
 const wasm_worker: Worker = new Worker(new URL('./worker.js', import.meta.url))
+const theme = createTheme({})
 
 function App() {
   // const classes = useStyles();
@@ -63,13 +63,19 @@ function App() {
     let image = imageData[idx]
     switch (data.action) {
       case WasmActionKind.EDGE:
-        image.edgeSrc = data.data
+        image.edgeSrc = data.src
+        image.edgeData = {
+          low_threshold: data.data.low_threshold,
+          high_threshold: data.data.high_threshold,
+        }
         break
       case WasmActionKind.GPS:
-        image.gpsSrc = data.data
+        image.gpsSrc = data.src
+        image.gpsData = data.data
         break
       case WasmActionKind.DATA:
-        image.qrSrc = data.data
+        image.qrSrc = data.src
+        image.qrData = data.data
         break
       default:
         return
@@ -78,10 +84,6 @@ function App() {
     dispatch({ type: CountActionKind.DECREASE, payload: 1 })
   }
   wasm_worker.onmessage = wasmEvent
-
-  useEffect(() => {
-    init() // FIXME handle wasm init
-  }, [])
 
   useEffect(() => {
     if (state.count > 0) {
@@ -142,6 +144,10 @@ function App() {
       let image = {
         name: file.name as string,
         file: file,
+        edgeData: {
+          low_threshold: 0.2,
+          high_threshold: 0.7,
+        },
       } as Image
 
       const fileReader = new FileReader()
@@ -151,8 +157,8 @@ function App() {
           data: image.src,
           idx: idx + offset,
           action: WasmActionKind.EDGE,
-          low_threshold: 0.2,
-          high_threshold: 0.7,
+          low_threshold: image.edgeData?.low_threshold,
+          high_threshold: image.edgeData?.high_threshold,
         })
         dispatch({ type: CountActionKind.DECREASE, payload: 1 })
       }
@@ -162,7 +168,6 @@ function App() {
     setImageData([...imageData, ...images])
   }
 
-  const theme = createTheme({})
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />

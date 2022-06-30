@@ -27,15 +27,21 @@ onmessage = async (event) => {
     case 'EDGE':
       const bytes = convertFromPngImage(data.data)
       let instance = Leaf.new(bytes)
-      ret.data = convertToPngImage(
+      ret.src = convertToPngImage(
         instance.get_edge(data.low_threshold, data.high_threshold)
       )
+      ret.data = {
+        low_threshold: data.low_threshold,
+        high_threshold: data.high_threshold,
+      }
       break
     case 'GPS':
-      ret.data = convertToPngImage(Leaf.get_qr(data.data))
+      ret.src = convertToPngImage(Leaf.get_qr(data.data))
+      ret.data = data.data
       break
     case 'DATA':
-      ret.data = convertToPngImage(Leaf.get_qr(data.data))
+      ret.src = convertToPngImage(Leaf.get_qr(data.data))
+      ret.data = data.data
       break
     default:
       // do nothing

@@ -57,7 +57,6 @@ export interface ImageData {
 
 interface ImageModal {
   open: boolean
-  onClose: () => void
   children: JSX.Element
 }
 
@@ -79,80 +78,131 @@ function ImageDetail(props: ImageModal) {
       aria-labelledby="modal-modal-title"
       aria-describedby="modal-modal-description"
     >
-      <Box sx={style}>
-        {props.children}
-        <div>
-          <Button onClick={props.onClose} sx={{ float: 'right' }}>
-            Ok
-          </Button>
-        </div>
-      </Box>
+      <Box sx={style}>{props.children}</Box>
     </Modal>
   )
 }
 
 interface QuickResponseModal extends Image {
   setData: (data: string) => void
+  onClose: () => void
 }
 
 interface EdgeModal extends Image {
   setData: (low_threshold: number, high_treshlod: number) => void
+  onClose: () => void
 }
 
 function QuickResponseDetail(props: QuickResponseModal) {
-  function setText(event: ChangeEvent<HTMLTextAreaElement>) {
-    props.setData(event.target.value)
+  const [text, setText] = useState<string | undefined>(props.qrData)
+  const [error, setError] = useState<boolean>(false)
+
+  function readData(event: ChangeEvent<HTMLTextAreaElement>) {
+    setText(event.target.value)
+    setError(!validateData(text))
+  }
+
+  function onClose() {
+    // commit
+    if (text !== undefined && validateData(text) && text !== props.qrData) {
+      props.setData(text)
+    }
+    props.onClose()
+  }
+
+  function validateData(data: string | undefined) {
+    return true
   }
 
   return (
     <div>
-      <Typography sx={{ p: 1 }}>Data</Typography>
-      <TextField
-        label="QR code"
-        value={props.qrData}
-        placeholder="https://www.wikipedia.org/"
-        onChange={setText}
-        multiline
-      />
+      <div>
+        <Typography sx={{ p: 1 }}>Data</Typography>
+        <TextField
+          label="QR code"
+          value={text}
+          placeholder="https://www.wikipedia.org/"
+          onChange={readData}
+          multiline
+        />
+      </div>
+      <div>
+        <Button onClick={onClose} sx={{ float: 'right' }}>
+          Ok
+        </Button>
+      </div>
     </div>
   )
 }
 
 function GlobalPositioningSystemDetail(props: QuickResponseModal) {
-  function setText(event: ChangeEvent<HTMLTextAreaElement>) {
-    props.setData(event.target.value)
+  const [text, setText] = useState<string | undefined>(props.gpsData)
+  const [error, setError] = useState<boolean>(false)
+
+  function readData(event: ChangeEvent<HTMLTextAreaElement>) {
+    setText(event.target.value)
+    setError(!validateData(text))
+  }
+
+  function onClose() {
+    // commit
+    if (text !== undefined && validateData(text) && text !== props.gpsData) {
+      props.setData(text)
+    }
+    props.onClose()
+  }
+
+  function validateData(data: string | undefined) {
+    return true
   }
 
   return (
     <div>
-      <Typography sx={{ p: 1 }}>Data</Typography>
-      <TextField
-        label="GPS data"
-        value={props.gpsData}
-        placeholder="TBD"
-        onChange={setText}
-        multiline
-      />
+      <div>
+        <Typography sx={{ p: 1 }}>Data</Typography>
+        <TextField
+          label="GPS data"
+          value={text}
+          placeholder="TBD"
+          onChange={readData}
+          multiline
+        />
+      </div>
+      <div>
+        <Button onClick={onClose} sx={{ float: 'right' }}>
+          Ok
+        </Button>
+      </div>
     </div>
   )
 }
 
 function EdgeDetail(props: EdgeModal) {
   const [values, setValues] = useState<(number | undefined)[]>([
-    props.edgeData?.low_threshold || 0.25,
-    props.edgeData?.high_threshold || 0.75,
+    props.edgeData?.low_threshold,
+    props.edgeData?.high_threshold,
   ])
-  const [error, setError] = useState<boolean>()
+  const [error, setError] = useState<boolean>(false)
+
+  function onClose() {
+    // commit results
+    if (validateThresholds(values)) {
+      const low = values[0] as number
+      const high = values[1] as number
+      if (
+        high !== props.edgeData?.high_threshold ||
+        low !== props.edgeData?.low_threshold
+      ) {
+        props.setData(low, high)
+      }
+    }
+    props.onClose()
+  }
 
   function setThresholds(values: (number | undefined)[]) {
     let valid = validateThresholds(values)
     setError(!valid)
     setValues(values)
-    if (valid) {
-      let low = values[0] as number
-      let high = values[1] as number
-      props.setData(low, high)
-    }
   }
 
   function validateThresholds(values: (number | undefined)[]) {
@@ -219,13 +269,15 @@ function EdgeDetail(props: EdgeModal) {
           />
         </Grid>
       </Grid>
+      <Button onClick={onClose} sx={{ float: 'right' }}>
+        Ok
+      </Button>
     </Box>
   )
 }
 
 export function StandardImageList(props: ImageData) {
   const [showDetail, setShowDetail] = useState<number | undefined>()
-
   function getSrc(item: Image) {
     switch (props.show) {
       case ImageTab.Image:
@@ -241,7 +293,6 @@ export function StandardImageList(props: ImageData) {
     }
   }
 
-  // <WasmImage {...item} />
   return (
     <Box sx={{ m: 1 }}>
       <ImageList cols={4} variant="standard">
@@ -265,26 +316,26 @@ export function StandardImageList(props: ImageData) {
                 </IconButton>
               }
             />
-            <ImageDetail
-              open={showDetail === idx}
-              onClose={() => setShowDetail(undefined)}
-            >
+            <ImageDetail open={showDetail === idx}>
               <div>
                 {props.show === ImageTab.Image && (
-                  <QuickResponseDetail
+                  <GlobalPositioningSystemDetail
                     setData={(data: string) => props.handleGpsChange(idx, data)}
+                    onClose={() => setShowDetail(undefined)}
                     {...item}
                   />
                 )}
                 {props.show === ImageTab.GPS && (
                   <GlobalPositioningSystemDetail
                     setData={(data: string) => props.handleGpsChange(idx, data)}
+                    onClose={() => setShowDetail(undefined)}
                     {...item}
                   />
                 )}
                 {props.show === ImageTab.QR && (
                   <QuickResponseDetail
                     setData={(data: string) => props.handleQrChange(idx, data)}
+                    onClose={() => setShowDetail(undefined)}
                     {...item}
                   />
                 )}
@@ -293,6 +344,7 @@ export function StandardImageList(props: ImageData) {
                     setData={(low_threshold: number, high_threshold: number) =>
                       props.handleEdgeChange(idx, low_threshold, high_threshold)
                     }
+                    onClose={() => setShowDetail(undefined)}
                     {...item}
                   />
                 )}
