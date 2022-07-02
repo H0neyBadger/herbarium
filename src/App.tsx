@@ -71,7 +71,11 @@ function App() {
         break
       case WasmActionKind.GPS:
         image.gpsSrc = data.src
-        image.gpsData = data.data
+        image.gpsLink = data.link
+        image.gpsData = {
+          latitude: data.data.latitude,
+          longitude: data.data.longitude,
+        }
         break
       case WasmActionKind.DATA:
         image.qrSrc = data.src
@@ -108,12 +112,19 @@ function App() {
     })
   }
 
-  function setGpsData(idx: number, data: string) {
+  function setGpsData(
+    idx: number,
+    latitude: number,
+    longitude: number,
+    link: string
+  ) {
     dispatch({ type: CountActionKind.INCREASE, payload: 1 })
     wasm_worker.postMessage({
-      data: data,
+      data: link,
       idx: idx,
       action: WasmActionKind.GPS,
+      latitude: latitude,
+      longitude: longitude,
     })
   }
 

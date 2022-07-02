@@ -1,21 +1,18 @@
-import { useState, ChangeEvent } from 'react'
+import { useState, useEffect } from 'react'
 import {
   Box,
-  Grid,
-  Typography,
   Modal,
-  Button,
   IconButton,
-  TextField,
   ImageListItemBar,
   ImageList,
   ImageListItem,
   Skeleton,
-  Slider,
 } from '@mui/material'
 import InfoIcon from '@mui/icons-material/Info'
 
-import GlobalPositioningSystemDetail from './Details/GlobalPositioningSystem'
+import GlobalPositioningSystemDetail, {
+  getBrowserLocation,
+} from './Details/GlobalPositioningSystem'
 import QuickResponseDetail from './Details/QuickResponse'
 import EdgeDetail from './Details/Edge'
 
@@ -31,12 +28,17 @@ export interface EdgeThresholds {
   high_threshold: number
 }
 
+export interface GlobalPositions {
+  latitude: number
+  longitude: number
+}
+
 export interface Image {
   name: string
   file: Blob
   src?: string
   gpsLink?: string
-  gpsData?: string
+  gpsData?: GlobalPositions
   gpsSrc?: string
   qrData?: string
   qrSrc?: string
@@ -54,6 +56,11 @@ export interface QuickResponseModal extends Image {
   onClose: () => void
 }
 
+export interface GlobalPositioningSystemModal extends Image {
+  setData: (latitude: number, longitude: number, link: string) => void
+  onClose: () => void
+}
+
 export interface EdgeModal extends Image {
   setData: (low_threshold: number, high_treshlod: number) => void
   onClose: () => void
@@ -62,7 +69,12 @@ export interface EdgeModal extends Image {
 export interface ImageData {
   data: Image[]
   show: ImageTab
-  handleGpsChange: (idx: number, data: string) => void
+  handleGpsChange: (
+    idx: number,
+    latitude: number,
+    longitude: number,
+    link: string
+  ) => void
   handleQrChange: (idx: number, data: string) => void
   handleEdgeChange: (
     idx: number,
@@ -96,6 +108,14 @@ function ImageDetail(props: ImageModal) {
 
 export function StandardImageList(props: ImageData) {
   const [showDetail, setShowDetail] = useState<number | undefined>()
+  const [defaultGps, setDefaultGps] = useState<GlobalPositions | undefined>()
+  // const [defaultGpsSrc, setDefaultGpsSrc] = useState<string | undefined>()
+
+  useEffect(() => {
+    getBrowserLocation((latitude: number, longitude: number) => {
+      setDefaultGps({ latitude: latitude, longitude: longitude })
+    })
+  }, [])
   function getSrc(item: Image) {
     switch (props.show) {
       case ImageTab.Image:
@@ -136,17 +156,16 @@ export function StandardImageList(props: ImageData) {
             />
             <ImageDetail open={showDetail === idx}>
               <div>
-                {props.show === ImageTab.Image && (
+                {(props.show === ImageTab.GPS ||
+                  props.show === ImageTab.Image) && (
                   <GlobalPositioningSystemDetail
-                    setData={(data: string) => props.handleGpsChange(idx, data)}
+                    setData={(
+                      latitude: number,
+                      longitude: number,
+                      link: string
+                    ) => props.handleGpsChange(idx, latitude, longitude, link)}
                     onClose={() => setShowDetail(undefined)}
-                    {...item}
-                  />
-                )}
-                {props.show === ImageTab.GPS && (
-                  <GlobalPositioningSystemDetail
-                    setData={(data: string) => props.handleGpsChange(idx, data)}
-                    onClose={() => setShowDetail(undefined)}
+                    gpsData={item.gpsData || defaultGps}
                     {...item}
                   />
                 )}

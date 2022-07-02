@@ -1,22 +1,44 @@
 import 'leaflet/dist/leaflet.css'
-import { useState, useEffect, ChangeEvent } from 'react'
+import { useState, useEffect, useMemo, useRef, ChangeEvent } from 'react'
 import { Grid, Typography, Button, TextField } from '@mui/material'
-import {
-  MapContainer,
-  TileLayer,
-  Marker,
-  Popup,
-  useMapEvents,
-} from 'react-leaflet'
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
 import { LatLng } from 'leaflet'
 
-import { QuickResponseModal } from '../Images'
+import { GlobalPositioningSystemModal } from '../Images'
 
 interface Location {
   position?: LatLng
   setPosition: (data: LatLng) => void
 }
+
+export function getBrowserLocation(
+  callback: (lat: number, lng: number) => void
+) {
+  navigator.geolocation.getCurrentPosition(
+    (position: GeolocationPosition) => {
+      callback(position.coords.latitude, position.coords.longitude)
+    },
+    (error) => {
+      console.log('Failed to get GeolocationPostition', error)
+    }
+  )
+}
+
 function LocationMarker(props: Location) {
+  const map = useMap()
+  const markerRef = useRef<any>(null)
+  const eventHandlers = useMemo(
+    () => ({
+      dragend() {
+        const marker = markerRef.current
+        if (marker != null) {
+          props.setPosition(marker.getLatLng())
+        }
+      },
+    }),
+    [markerRef, props]
+  )
+
   useEffect(() => {
     // https://github.com/PaulLeCam/react-leaflet/issues/453
     const L = require('leaflet')
@@ -28,39 +50,48 @@ function LocationMarker(props: Location) {
     })
   }, [])
 
-  const map = useMapEvents({
-    click() {
-      map.locate()
-    },
-    locationfound(e) {
-      props.setPosition(e.latlng)
-      map.flyTo(e.latlng, map.getZoom())
-    },
-  })
+  useEffect(() => {
+    if (props.position !== undefined) {
+      // center map view position
+      map.panTo(props.position)
+    }
+  }, [props, map])
 
   return props.position === undefined ? null : (
-    <Marker position={props.position}>
-      <Popup>You are here</Popup>
+    <Marker
+      eventHandlers={eventHandlers}
+      ref={markerRef}
+      position={props.position}
+      draggable
+    >
+      <Popup>QR code position</Popup>
     </Marker>
   )
 }
 
 export default function GlobalPositioningSystemDetail(
-  props: QuickResponseModal
+  props: GlobalPositioningSystemModal
 ) {
-  const [text, setText] = useState<string>(props.gpsData || '')
-  const [position, setPosition] = useState<LatLng | undefined>()
-  const [longitude, setLongitude] = useState<string>('')
-  const [latitude, setLatitude] = useState<string>('')
-  const [error, setError] = useState<boolean>(false)
+  const [text, setText] = useState<string>(props.gpsLink || '')
+  const [position, setPosition] = useState<LatLng>(
+    new LatLng(props.gpsData?.latitude || 0, props.gpsData?.longitude || 0)
+  )
+  const [longitude, setLongitude] = useState<string>(
+    props.gpsData?.longitude.toString() || ''
+  )
+  const [latitude, setLatitude] = useState<string>(
+    props.gpsData?.latitude.toString() || ''
+  )
+  const [errorLat, setLatError] = useState<boolean>(false)
+  const [errorLng, setLngError] = useState<boolean>(false)
 
   useEffect(() => {
-    if (latitude && longitude) {
+    if (position !== undefined) {
       setText(
-        `https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}`
+        `https://www.google.com/maps/search/?api=1&query=${position.lat},${position.lng}`
       )
     }
-  }, [longitude, latitude])
+  }, [position])
 
   function readPosition(loc: LatLng) {
     setLongitude(loc.lng.toString())
@@ -74,42 +105,39 @@ export default function GlobalPositioningSystemDetail(
 
   function readLongitude(event: ChangeEvent<HTMLTextAreaElement>) {
     setLongitude(event.target.value)
-    const loc: LatLng =
-      position === undefined
-        ? new LatLng(0, 0)
-        : new LatLng(position.lat, position.lng)
     const lng = parseFloat(event.target.value)
-    if (!isNaN(lng)) {
-      loc.lng = lng
+    const valid = validateValue(lng)
+    setLngError(!valid)
+    if (valid) {
+      const pos = new LatLng(position.lat, lng)
+      setPosition(pos)
     }
-    setError(!validateData(loc))
-    setPosition(loc)
   }
 
   function readLatitude(event: ChangeEvent<HTMLTextAreaElement>) {
     setLatitude(event.target.value)
-    const loc: LatLng =
-      position === undefined
-        ? new LatLng(0, 0)
-        : new LatLng(position.lat, position.lng)
-    const lat = parseFloat(latitude)
-    if (!isNaN(lat)) {
-      loc.lat = lat
+    const lat = parseFloat(event.target.value)
+    const valid = validateValue(lat)
+    setLatError(!valid)
+    if (valid) {
+      const pos = new LatLng(lat, position.lng)
+      setPosition(pos)
     }
-    setError(!validateData(loc))
-    setPosition(loc)
   }
 
   function onClose() {
     // commit
-    if (text !== undefined && text !== props.gpsData) {
-      props.setData(text)
+    if (text !== props.gpsLink) {
+      props.setData(position.lat, position.lng, text)
     }
     props.onClose()
   }
 
-  function validateData(data: LatLng | undefined) {
-    if (data === undefined) {
+  function validateValue(value: number) {
+    if (isNaN(value)) {
+      return false
+    }
+    if (value > 90 || value < -90) {
       return false
     }
     return true
@@ -125,7 +153,7 @@ export default function GlobalPositioningSystemDetail(
               id="outlined-number"
               label="Longitude"
               type="number"
-              error={error}
+              error={errorLng}
               value={longitude}
               onChange={readLongitude}
               size="small"
@@ -137,7 +165,7 @@ export default function GlobalPositioningSystemDetail(
               id="outlined-number"
               label="Latitude"
               type="number"
-              error={error}
+              error={errorLat}
               value={latitude}
               onChange={readLatitude}
               size="small"
@@ -155,7 +183,7 @@ export default function GlobalPositioningSystemDetail(
           </Grid>
           <Grid item p={1} width="100%" height="40vh">
             <MapContainer
-              center={{ lat: 51.505, lng: -0.09 }}
+              center={position}
               zoom={13}
               style={{ height: '100%', width: '100%' }}
               scrollWheelZoom={false}

@@ -37,7 +37,11 @@ onmessage = async (event) => {
       break
     case 'GPS':
       ret.src = convertToPngImage(Leaf.get_qr(data.data))
-      ret.data = data.data
+      ret.link = data.data
+      ret.data = {
+        latitude: data.latitude,
+        longitude: data.longitude,
+      }
       break
     case 'DATA':
       ret.src = convertToPngImage(Leaf.get_qr(data.data))
