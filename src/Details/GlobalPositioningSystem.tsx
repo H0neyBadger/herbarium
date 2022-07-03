@@ -1,7 +1,13 @@
 import 'leaflet/dist/leaflet.css'
 import { useState, useEffect, useMemo, useRef, ChangeEvent } from 'react'
 import { Grid, Typography, Button, TextField } from '@mui/material'
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
+import {
+  MapContainer,
+  TileLayer,
+  Marker,
+  Popup,
+  useMapEvents,
+} from 'react-leaflet'
 import { LatLng } from 'leaflet'
 
 import { GlobalPositioningSystemModal } from '../Images'
@@ -25,8 +31,14 @@ export function getBrowserLocation(
 }
 
 function LocationMarker(props: Location) {
-  const map = useMap()
+  // FIXME: type
   const markerRef = useRef<any>(null)
+  const map = useMapEvents({
+    click(event: any) {
+      props.setPosition(event.latlng)
+    },
+  })
+
   const eventHandlers = useMemo(
     () => ({
       dragend() {
