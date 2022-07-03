@@ -4,23 +4,26 @@ import { Typography, Button, TextField } from '@mui/material'
 import { QuickResponseModal } from '../Images'
 
 export default function QuickResponseDetail(props: QuickResponseModal) {
-  const [text, setText] = useState<string | undefined>(props.qrData)
+  const [text, setText] = useState<string>(props.qrData || '')
   const [error, setError] = useState<boolean>(false)
 
   function readData(event: ChangeEvent<HTMLTextAreaElement>) {
     setText(event.target.value)
-    setError(!validateData(text))
+    setError(!validateData(event.target.value))
   }
 
   function onClose() {
-    // commit
-    if (text !== undefined && validateData(text) && text !== props.qrData) {
-      props.setData(text)
+    const data = text.trim()
+    if (validateData(data) && data !== props.qrData) {
+      props.setData(data)
     }
     props.onClose()
   }
 
-  function validateData(data: string | undefined) {
+  function validateData(data: string) {
+    if (!data.trim()) {
+      return false
+    }
     return true
   }
 
@@ -33,6 +36,7 @@ export default function QuickResponseDetail(props: QuickResponseModal) {
           value={text}
           placeholder="https://www.wikipedia.org/"
           onChange={readData}
+          error={error}
           multiline
         />
       </div>
