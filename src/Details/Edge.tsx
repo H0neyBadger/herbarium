@@ -9,15 +9,23 @@ export default function EdgeDetail(props: EdgeModal) {
     props.edgeData?.high_threshold,
   ])
   const [error, setError] = useState<boolean>(false)
+  const [lowThreshold, setLowThreshold] = useState<string>(
+    props.edgeData ? props.edgeData.low_threshold.toString() : ''
+  )
+  const [highThreshold, setHighThreshold] = useState<string>(
+    props.edgeData ? props.edgeData.high_threshold.toString() : ''
+  )
 
   function onClose() {
     // commit results
     if (validateThresholds(values)) {
-      const low = values[0] as number
-      const high = values[1] as number
+      const low = values[0]
+      const high = values[1]
       if (
-        high !== props.edgeData?.high_threshold ||
-        low !== props.edgeData?.low_threshold
+        low !== undefined &&
+        high !== undefined &&
+        (high !== props.edgeData?.high_threshold ||
+          low !== props.edgeData?.low_threshold)
       ) {
         props.setData(low, high)
       }
@@ -25,8 +33,28 @@ export default function EdgeDetail(props: EdgeModal) {
     props.onClose()
   }
 
+  function setLow(event: ChangeEvent<HTMLInputElement>) {
+    setLowThreshold(event.target.value)
+    const nval = [parseFloat(event.target.value), values[1]]
+    const valid = validateThresholds(nval)
+    setError(!valid)
+    if (valid) {
+      setValues(nval)
+    }
+  }
+
+  function setHigh(event: ChangeEvent<HTMLInputElement>) {
+    setHighThreshold(event.target.value)
+    const nval = [values[0], parseFloat(event.target.value)]
+    const valid = validateThresholds(nval)
+    setError(!valid)
+    if (valid) {
+      setValues(nval)
+    }
+  }
+
   function setThresholds(values: (number | undefined)[]) {
-    let valid = validateThresholds(values)
+    const valid = validateThresholds(values)
     setError(!valid)
     setValues(values)
   }
@@ -35,10 +63,10 @@ export default function EdgeDetail(props: EdgeModal) {
     if (!values[0] || !values[1]) {
       return false
     }
-    if (values[0] <= 0 || values[0] >= 1) {
+    if (values[0] <= 0 || values[0] >= 255) {
       return false
     }
-    if (values[1] <= 0 || values[1] > 1) {
+    if (values[1] <= 0 || values[1] > 255) {
       return false
     }
     if (values[0] >= values[1]) {
@@ -49,7 +77,7 @@ export default function EdgeDetail(props: EdgeModal) {
 
   return (
     <Box>
-      <Typography sx={{ p: 1 }}>Data</Typography>
+      <Typography sx={{ p: 1 }}>Edge detection</Typography>
       <Grid container columns={2} wrap="nowrap">
         <Grid item>
           <Slider
@@ -65,35 +93,31 @@ export default function EdgeDetail(props: EdgeModal) {
             disableSwap
             sx={{ p: 1 }}
             min={0.1}
-            max={1}
+            max={255}
           />
         </Grid>
         <Grid item>
           <TextField
             id="outlined-number"
-            label="High threshold"
-            type="number"
-            error={error}
-            value={values[1]}
-            onChange={(event: ChangeEvent<HTMLInputElement>) =>
-              setThresholds([values[0], +event.target.value])
-            }
-            sx={{ p: 1, width: '15ch' }}
-            size="small"
-          />
-          <TextField
-            id="outlined-number"
             label="Low threshold"
             type="number"
             error={error}
-            value={values[0]}
-            onChange={(event: ChangeEvent<HTMLInputElement>) =>
-              setThresholds([+event.target.value, values[1]])
-            }
+            value={lowThreshold}
+            onChange={setLow}
             sx={{ p: 1, width: '15ch' }}
             size="small"
           />
         </Grid>
+        <TextField
+          id="outlined-number"
+          label="High threshold"
+          type="number"
+          error={error}
+          value={highThreshold}
+          onChange={setHigh}
+          sx={{ p: 1, width: '15ch' }}
+          size="small"
+        />
       </Grid>
       <Button onClick={onClose} sx={{ float: 'right' }}>
         Ok

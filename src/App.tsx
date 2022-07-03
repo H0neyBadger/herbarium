@@ -156,8 +156,8 @@ function App() {
         name: file.name as string,
         file: file,
         edgeData: {
-          low_threshold: 0.2,
-          high_threshold: 0.7,
+          low_threshold: 1,
+          high_threshold: 40,
         },
       } as Image
 

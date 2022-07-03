@@ -10,58 +10,33 @@ extern "C" {
     fn log(s: &str);
 }
 
+
 #[wasm_bindgen]
-pub struct Leaf {
-    raw: Vec<u8>,
-    metadata: Option<exif::Exif>,
-}
+pub struct Leaf {}
 
 #[wasm_bindgen]
 impl Leaf {
-    pub fn new(blob: Vec<u8>) -> Self {
-        console_error_panic_hook::set_once();
-
-        let mut metadata: Option<exif::Exif> = None;
-        let mut c = std::io::Cursor::new(&blob);
-        let exifreader = exif::Reader::new();
-
-        match exifreader.read_from_container(&mut c) {
-            Ok(m) => metadata = Some(m),
-            Err(m) => log(&format!("Error: {:?}", m)),
-        }
-
-        if let Some(m) = &metadata {
-            for f in m.fields() {
-                log(&format!(
-                    "{} {} {}",
-                    &f.tag,
-                    &f.ifd_num,
-                    &f.display_value().with_unit(m)
-                ));
-            }
-        }
-        Self {
-            raw: blob.clone(),
-            metadata: metadata,
-        }
-    }
-
     pub fn get_qr(data: String) -> Vec<u8> {
+        console_error_panic_hook::set_once();
         qrcode_generator::to_png_to_vec(data, qrcode_generator::QrCodeEcc::Low, 1024).unwrap()
     }
 
-    pub fn get_edge(&self, low_threshold: f32, high_threshold: f32) -> Vec<u8> {
-        let img = image::io::Reader::new(std::io::Cursor::new(&self.raw))
+    pub fn get_edge(blob: &[u8], low_threshold: f32, high_threshold: f32) -> Vec<u8> {
+        console_error_panic_hook::set_once();
+        let img = image::io::Reader::new(std::io::Cursor::new(blob))
             .with_guessed_format()
             .unwrap()
             .decode()
             .unwrap()
             .to_luma8();
-        let ret = imageproc::edges::canny(
+        let mut ret = imageproc::edges::canny(
             &img,
             low_threshold,  // low threshold
             high_threshold, // high threshold
         );
+        // invert black and white
+        image::imageops::colorops::invert(&mut ret);
+
         let mut bytes: Vec<u8> = Vec::new();
         ret.write_to(
             &mut std::io::Cursor::new(&mut bytes),
