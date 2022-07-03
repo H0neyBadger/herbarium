@@ -2,9 +2,11 @@ import { ChangeEvent, useEffect, useState, useReducer } from 'react'
 import { createTheme, ThemeProvider } from '@mui/material/styles'
 import CssBaseline from '@mui/material/CssBaseline'
 import { Tabs, Tab } from '@mui/material'
+import exifr from 'exifr'
 
 import HerbariumAppBar from './Header'
 import { Image, StandardImageList, ImageTab } from './Images'
+import { formatGpsLink } from './Details/GlobalPositioningSystem'
 
 enum CountActionKind {
   INCREASE = 'INCREASE',
@@ -131,7 +133,8 @@ function App() {
   function setEdgeData(
     idx: number,
     low_threshold: number,
-    high_threshold: number
+    high_threshold: number,
+    orientation: number | undefined
   ) {
     const src = imageData[idx]?.src
     if (src !== undefined) {
@@ -142,15 +145,41 @@ function App() {
         action: WasmActionKind.EDGE,
         low_threshold: low_threshold,
         high_threshold: high_threshold,
+        orientation: orientation || 1,
       })
     }
   }
 
+  function dispatchImage(idx: number, image: Image, metadata: any) {
+    console.log('Metadata:', metadata)
+    const lat = metadata?.latitude
+    const lng = metadata?.longitude
+    image.orientation = metadata?.Orientation || 1
+
+    dispatch({ type: CountActionKind.INCREASE, payload: 1 })
+    wasm_worker.postMessage({
+      data: image.src,
+      idx: idx,
+      action: WasmActionKind.EDGE,
+      low_threshold: image.edgeData?.low_threshold,
+      high_threshold: image.edgeData?.high_threshold,
+      orientation: image.orientation,
+    })
+    if (lat !== undefined && lng !== undefined) {
+      dispatch({ type: CountActionKind.INCREASE, payload: 1 })
+      wasm_worker.postMessage({
+        data: formatGpsLink(lat, lng),
+        idx: idx,
+        action: WasmActionKind.GPS,
+        latitude: lat,
+        longitude: lng,
+      })
+    }
+  }
   async function readFile(event: any): Promise<void> {
     let files = Array.from(event.target.files)
     let offset = imageData.length
-    // *2 load image and edge
-    dispatch({ type: CountActionKind.INCREASE, payload: files.length * 2 })
+    dispatch({ type: CountActionKind.INCREASE, payload: files.length })
     let images: Image[] = files.map((file: any, idx: number) => {
       let image = {
         name: file.name as string,
@@ -164,13 +193,13 @@ function App() {
       const fileReader = new FileReader()
       fileReader.onload = async (e: any) => {
         image.src = e.target.result as string
-        wasm_worker.postMessage({
-          data: image.src,
-          idx: idx + offset,
-          action: WasmActionKind.EDGE,
-          low_threshold: image.edgeData?.low_threshold,
-          high_threshold: image.edgeData?.high_threshold,
-        })
+        const options = {
+          translateValues: false,
+          // pick: ['Orientation', 'latitude', 'longitude'],
+        }
+        exifr
+          .parse(e.target.result, options)
+          .then((metadata) => dispatchImage(idx + offset, image, metadata))
         dispatch({ type: CountActionKind.DECREASE, payload: 1 })
       }
       fileReader.readAsDataURL(file)

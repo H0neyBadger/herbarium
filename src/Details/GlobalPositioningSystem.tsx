@@ -30,6 +30,10 @@ export function getBrowserLocation(
   )
 }
 
+export function formatGpsLink(latitude: number, longitude: number) {
+  return `https://www.google.com/maps/search/?api=1&query=${latitude},${longitude}`
+}
+
 function LocationMarker(props: Location) {
   // FIXME: type
   const markerRef = useRef<any>(null)
@@ -99,9 +103,7 @@ export default function GlobalPositioningSystemDetail(
 
   useEffect(() => {
     if (position !== undefined) {
-      setText(
-        `https://www.google.com/maps/search/?api=1&query=${position.lat},${position.lng}`
-      )
+      setText(formatGpsLink(position.lat, position.lng))
     }
   }, [position])
 

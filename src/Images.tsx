@@ -36,6 +36,7 @@ export interface GlobalPositions {
 export interface Image {
   name: string
   file: Blob
+  orientation?: number
   src?: string
   gpsLink?: string
   gpsData?: GlobalPositions
@@ -79,7 +80,8 @@ export interface ImageData {
   handleEdgeChange: (
     idx: number,
     low_threshold: number,
-    high_threshold: number
+    high_threshold: number,
+    orientation: number | undefined
   ) => void
 }
 
@@ -179,7 +181,12 @@ export function StandardImageList(props: ImageData) {
                 {props.show === ImageTab.Edge && (
                   <EdgeDetail
                     setData={(low_threshold: number, high_threshold: number) =>
-                      props.handleEdgeChange(idx, low_threshold, high_threshold)
+                      props.handleEdgeChange(
+                        idx,
+                        low_threshold,
+                        high_threshold,
+                        item.orientation
+                      )
                     }
                     onClose={() => setShowDetail(undefined)}
                     {...item}
