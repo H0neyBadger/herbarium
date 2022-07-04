@@ -27,7 +27,12 @@ onmessage = async (event) => {
     case 'EDGE':
       const bytes = convertFromPngImage(data.data)
       ret.src = convertToPngImage(
-        Leaf.get_edge(bytes, data.low_threshold, data.high_threshold)
+        Leaf.get_edge(
+          bytes,
+          data.low_threshold,
+          data.high_threshold,
+          data.orientation
+        )
       )
       ret.data = {
         low_threshold: data.low_threshold,
