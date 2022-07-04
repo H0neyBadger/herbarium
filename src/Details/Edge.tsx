@@ -22,6 +22,7 @@ export default function EdgeDetail(props: EdgeModal) {
       const low = values[0]
       const high = values[1]
       if (
+        !error &&
         low !== undefined &&
         high !== undefined &&
         (high !== props.edgeData?.high_threshold ||
@@ -36,26 +37,19 @@ export default function EdgeDetail(props: EdgeModal) {
   function setLow(event: ChangeEvent<HTMLInputElement>) {
     setLowThreshold(event.target.value)
     const nval = [parseFloat(event.target.value), values[1]]
-    const valid = validateThresholds(nval)
-    setError(!valid)
-    if (valid) {
-      setValues(nval)
-    }
+    setError(!validateThresholds(nval))
+    setValues(nval)
   }
 
   function setHigh(event: ChangeEvent<HTMLInputElement>) {
     setHighThreshold(event.target.value)
     const nval = [values[0], parseFloat(event.target.value)]
-    const valid = validateThresholds(nval)
-    setError(!valid)
-    if (valid) {
-      setValues(nval)
-    }
+    setError(!validateThresholds(nval))
+    setValues(nval)
   }
 
   function setThresholds(values: (number | undefined)[]) {
-    const valid = validateThresholds(values)
-    setError(!valid)
+    setError(!validateThresholds(values))
     setValues(values)
   }
 
@@ -86,7 +80,6 @@ export default function EdgeDetail(props: EdgeModal) {
             onChange={(event: Event, value: number | number[]) =>
               setThresholds(value as number[])
             }
-            disabled={error}
             valueLabelDisplay="auto"
             size="small"
             orientation="vertical"
