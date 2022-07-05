@@ -89,8 +89,10 @@ export default function GlobalPositioningSystemDetail(
   props: GlobalPositioningSystemModal
 ) {
   const [text, setText] = useState<string>(props.gpsLink || '')
-  const [position, setPosition] = useState<LatLng>(
-    new LatLng(props.gpsData?.latitude || 0, props.gpsData?.longitude || 0)
+  const [position, setPosition] = useState<LatLng | undefined>(
+    props.gpsData
+      ? new LatLng(props.gpsData.latitude, props.gpsData.longitude)
+      : undefined
   )
   const [longitude, setLongitude] = useState<string>(
     props.gpsData?.longitude.toString() || ''
@@ -123,7 +125,7 @@ export default function GlobalPositioningSystemDetail(
     const valid = validateValue(lng)
     setLngError(!valid)
     if (valid) {
-      const pos = new LatLng(position.lat, lng)
+      const pos = new LatLng(position?.lat || 0, lng)
       setPosition(pos)
     }
   }
@@ -134,14 +136,14 @@ export default function GlobalPositioningSystemDetail(
     const valid = validateValue(lat)
     setLatError(!valid)
     if (valid) {
-      const pos = new LatLng(lat, position.lng)
+      const pos = new LatLng(lat, position?.lng || 0)
       setPosition(pos)
     }
   }
 
   function onClose() {
     // commit
-    if (text !== props.gpsLink) {
+    if (text !== props.gpsLink && position !== undefined) {
       props.setData(position.lat, position.lng, text)
     }
     props.onClose()
@@ -197,8 +199,8 @@ export default function GlobalPositioningSystemDetail(
           </Grid>
           <Grid item p={1} width="100%" height="40vh">
             <MapContainer
-              center={position}
-              zoom={13}
+              center={position || new LatLng(0, 0)}
+              zoom={position === undefined ? 1 : 13}
               style={{ height: '100%', width: '100%' }}
               scrollWheelZoom={false}
             >

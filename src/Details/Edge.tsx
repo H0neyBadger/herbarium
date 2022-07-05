@@ -36,16 +36,22 @@ export default function EdgeDetail(props: EdgeModal) {
 
   function setLow(event: ChangeEvent<HTMLInputElement>) {
     setLowThreshold(event.target.value)
-    const nval = [parseFloat(event.target.value), values[1]]
+    const value = parseFloat(event.target.value)
+    const nval = [value, values[1]]
     setError(!validateThresholds(nval))
-    setValues(nval)
+    if (!isNaN(value)) {
+      setValues(nval)
+    }
   }
 
   function setHigh(event: ChangeEvent<HTMLInputElement>) {
     setHighThreshold(event.target.value)
-    const nval = [values[0], parseFloat(event.target.value)]
+    const value = parseFloat(event.target.value)
+    const nval = [values[0], value]
     setError(!validateThresholds(nval))
-    setValues(nval)
+    if (!isNaN(value)) {
+      setValues(nval)
+    }
   }
 
   function setThresholds(values: (number | undefined)[]) {
@@ -57,6 +63,11 @@ export default function EdgeDetail(props: EdgeModal) {
     if (!values[0] || !values[1]) {
       return false
     }
+
+    if (isNaN(values[0]) || isNaN(values[1])) {
+      return false
+    }
+
     if (values[0] <= 0 || values[0] >= 255) {
       return false
     }
@@ -77,9 +88,12 @@ export default function EdgeDetail(props: EdgeModal) {
           <Slider
             getAriaLabel={() => 'Threshold range'}
             value={values as number[]}
-            onChange={(event: Event, value: number | number[]) =>
-              setThresholds(value as number[])
-            }
+            onChange={(event: Event, value: number | number[]) => {
+              const values = value as number[]
+              setLowThreshold(values[0].toString())
+              setHighThreshold(values[1].toString())
+              setThresholds(values)
+            }}
             valueLabelDisplay="auto"
             size="small"
             orientation="vertical"
