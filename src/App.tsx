@@ -3,6 +3,7 @@ import { createTheme, ThemeProvider } from '@mui/material/styles'
 import CssBaseline from '@mui/material/CssBaseline'
 import { Tabs, Tab } from '@mui/material'
 import exifr from 'exifr'
+import JSZip from 'jszip'
 
 import HerbariumAppBar from './Header'
 import { Image, StandardImageList, ImageTab } from './Images'
@@ -208,10 +209,49 @@ function App() {
     setImageData([...imageData, ...images])
   }
 
+  async function writeFile(event: any): Promise<void> {
+    if (imageData) {
+      dispatch({ type: CountActionKind.INCREASE, payload: 1 })
+      const zip = new JSZip()
+      imageData.forEach(async (image: Image) => {
+        const name = image.name.replace(/\.[^/.]+$/, '')
+        const img = zip.folder(name)
+        if (img && image.src) {
+          img.file(image.name, image.src.split(',')[1], { base64: true })
+        }
+        if (img && image.edgeSrc) {
+          let prem = fetch(image.edgeSrc).then((r) => r.blob())
+          img.file(`${name}.edge.png`, prem)
+        }
+        if (img && image.gpsSrc) {
+          let prem = fetch(image.gpsSrc).then((r) => r.blob())
+          img.file(`${name}.gps.png`, prem)
+        }
+        if (img && image.qrSrc) {
+          let prem = fetch(image.qrSrc).then((r) => r.blob())
+          img.file(`${name}.qr.png`, prem)
+        }
+      })
+      zip.generateAsync({ type: 'blob' }).then(function (content) {
+        const a = document.createElement('a')
+        a.href = window.URL.createObjectURL(content)
+        a.download = 'expor.zip'
+        document.body.appendChild(a)
+        a.click()
+        a.remove()
+        dispatch({ type: CountActionKind.DECREASE, payload: 1 })
+      })
+    }
+  }
+
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <HerbariumAppBar onImport={readFile} isLoading={isLoading} />
+      <HerbariumAppBar
+        onImport={readFile}
+        onExport={writeFile}
+        isLoading={isLoading}
+      />
       <Tabs value={tab} onChange={handleChangeTab} centered>
         {Object.values(ImageTab)
           .filter((key) => isNaN(Number(key)))

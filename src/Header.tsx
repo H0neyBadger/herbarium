@@ -10,7 +10,7 @@ const Input = styled('input')({
 })
 
 export interface HerbariumAppBarProps {
-  // onExport: (event: any) => Promise<void>
+  onExport: (event: any) => Promise<void>
   onImport: (event: any) => Promise<void>
   isLoading: boolean
 }
@@ -23,7 +23,11 @@ export default function HerbariumAppBar(props: HerbariumAppBarProps) {
           <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
             Herbarium
           </Typography>
-          <Button color="inherit" disabled={props.isLoading}>
+          <Button
+            color="inherit"
+            disabled={props.isLoading}
+            onClick={props.onExport}
+          >
             Export
           </Button>
           <label htmlFor="contained-button-file">
